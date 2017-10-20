@@ -1,0 +1,680 @@
+<!--
+@license
+Copyright 2016 The Advanced REST client authors <arc@mulesoft.com>
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+-->
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../openable-panel-behavior/openable-panel-behavior.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../arc-icons/arc-icons.html">
+<link rel="import" href="../paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../paper-item/paper-icon-item.html">
+<link rel="import" href="../paper-progress/paper-progress.html">
+<link rel="import" href="../paper-toast/paper-toast.html">
+<link rel="import" href="../paper-dialog/paper-dialog.html">
+<link rel="import" href="../tutorial-toast/tutorial-toast.html">
+<link rel="import" href="../bottom-sheet/bottom-sheet.html">
+<link rel="import" href="../cookies-list-items/cookies-list-items.html">
+<link rel="import" href="../cookie-editor/cookie-editor.html">
+<link rel="import" href="../cookie-details/cookie-details.html">
+<!--
+`<cookie-manager>` A manager for session cookies. Displays a list of cookies that can be edited
+
+The element queries the application for cookies to display by sending
+`session-cookie-list-all` custom event. The handler should set a `result` property
+on the details object and cancel the event.
+Result is a promise that resolves to cookies array.
+
+### Example
+
+```
+<cookie-manager on-session-cookie-list-all></cookie-manager>
+<script>
+document.body.querySelector('cookie-manager')
+.addEventListener('session-cookie-list-all', function(e) {
+  e.preventDefault();
+  e.detail.result = Promise.resolve(cookies)
+});
+</script>
+```
+
+The element listens to `session-cookie-removed` and `session-cookie-changed`
+events to update, add or delete a cookie from the list.
+The `detail` object of this events is a cookie.
+
+### Styling
+`<cookie-manager>` provides the following custom properties and mixins for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--cookie-manager` | Mixin applied to the element | `{}`
+`--cookie-manager-loader` | Mixin applied to the `paper-progress` element | `{}`
+`--warning-primary-color` | Main color of the warning messages | `#FF7043`
+`--warning-contrast-color` | Contrast color for the warning color | `#fff`
+`--error-toast` | Mixin applied to the error toast | `{}`
+`--empty-info` | Mixin applied to the label rendered when no data is available. | `{}`
+`--cookie-manager-bottom-sheet` | Mixin applied to the bottom sheet tutorial element | `{}`
+
+@group UI Elements
+@element cookie-manager
+@demo demo/index.html
+-->
+<dom-module id="cookie-manager">
+  <template>
+    <style>
+    :host {
+      display: block;
+      position: relative;
+      @apply --layout-vertical;
+      @apply --cookie-manager;
+    }
+
+    .header {
+      @apply --layout-horizontal;
+      @apply --layout-center;
+    }
+
+    h2 {
+      margin-left: 16px;
+      @apply --arc-font-headline;
+      @apply --layout-flex;
+    }
+
+    h3 {
+      margin-left: 16px;
+      @apply --arc-font-subhead;
+    }
+
+    paper-button>iron-icon {
+      margin-left: 12px;
+    }
+
+    paper-listbox iron-icon {
+      color: rgba(0, 0, 0, 0.54);
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    paper-progress {
+      width: 100%;
+      @apply --cookie-manager-loader;
+    }
+
+    #dataClearDialog {
+      background-color: var(--warning-primary-color, #FF7043);
+      color: var(--warning-contrast-color, #fff);
+    }
+
+    #dataClearDialog paper-button {
+      color: #fff;
+      background-color: transparent;
+    }
+
+    .error-toast {
+      background-color: var(--warning-primary-color, #FF7043);
+      color: var(--warning-contrast-color, #fff);
+      @apply --error-toast;
+    }
+
+    .empty-info {
+      margin-left: 16px;
+      font-size: 16px;
+      @apply --empty-info;
+    }
+
+    tutorial-toast {
+      position: absolute;
+    }
+
+    #detailsContainer,
+    #editorContainer {
+      min-width: 40%;
+      max-width: 60%;
+      left: 20%;
+      @apply --cookie-manager-bottom-sheet;
+    }
+    </style>
+    <div class="header">
+      <h2>Sessison cookies</h2>
+      <div class="header-actions">
+        <paper-menu-button dynamic-align id="mainMenu">
+          <paper-icon-button icon="arc:more-vert" class="dropdown-trigger"></paper-icon-button>
+          <paper-listbox class="dropdown-content" id="mainMenuOptions">
+            <paper-icon-item on-tap="reset">
+              <iron-icon icon="arc:cached" item-icon></iron-icon>
+              Refresh list
+            </paper-icon-item>
+            <paper-icon-item on-tap="addCookie">
+              <iron-icon icon="arc:add" item-icon></iron-icon>
+              Add cookie
+            </paper-icon-item>
+            <paper-icon-item on-tap="_onExportAll">
+              <iron-icon icon="arc:archive" item-icon></iron-icon>
+              Export all
+            </paper-icon-item>
+            <paper-icon-item on-tap="_deleteAllClick">
+              <iron-icon icon="arc:delete" item-icon></iron-icon>
+              Delete all
+            </paper-icon-item>
+          </paper-listbox>
+        </paper-menu-button>
+      </div>
+    </div>
+    <template is="dom-if" if="[[loading]]">
+      <paper-progress indeterminate></paper-progress>
+    </template>
+    <template is="dom-if" if="[[dataUnavailable]]">
+      <p class="empty-info">Cookie list is empty.</p>
+      <paper-button class="action-button" data-action="empty-add-cookie" on-tap="addCookie">Create a cookie</paper-button>
+    </template>
+
+    <template is="dom-if" if="[[!listHidden]]">
+      <h3>Cookies ([[items.length]])</h3>
+      <cookies-list-items
+        items=[[items]]
+        empty="[[searchListEmpty]]"
+        on-list-items-delete="_onDelete"
+        on-list-items-export="_onExport"
+        on-list-items-search="_onSearch"
+        on-list-item-details="_onDetails"></cookies-list-items>
+    </template>
+
+    <tutorial-toast opened="[[dataUnavailable]]">
+      Use "Web session" menu to login to a web service.
+    </tutorial-toast>
+    <bottom-sheet id="detailsContainer" on-iron-overlay-opened="_resizeSheetContent">
+      <cookie-details id="details" on-delete-cookie="_deleteDetails" on-edit-cookie="_editDetails"></cookie-details>
+    </bottom-sheet>
+    <bottom-sheet id="editorContainer" on-iron-overlay-opened="_resizeEditorSheetContent">
+      <cookie-editor id="editor" on-cancel-cookie-edit="_cancelEdit" on-save-cookie="_saveEdit"></cookie-editor>
+    </bottom-sheet>
+    <paper-toast id="noModel" class="error-toast" text="Model not found. Please, report an issue."></paper-toast>
+    <paper-toast id="errorToast" class="error-toast" duration="5000"></paper-toast>
+    <paper-toast id="noExport" class="error-toast" text="Export module not found. Please, report an issue."></paper-toast>
+
+    <paper-dialog id="dataClearDialog" on-iron-overlay-closed="_onClearDialogResult">
+      <h2>Danger zone</h2>
+      <p>This will remove all session cookies. Without option to restore it.</p>
+      <p>Maybe you should create a backup first?</p>
+      <div class="buttons">
+        <paper-button dialog-dismiss autofocus>Cancel</paper-button>
+        <paper-button dialog-confirm class="action-button">Destroy</paper-button>
+      </div>
+    </paper-dialog>
+  </template>
+  <script>
+  Polymer({
+    is: 'cookie-manager',
+    behaviors: [ArcBehaviors.OpenablePanelBehavior],
+    properties: {
+      // List of cookies to display
+      items: {
+        type: Array,
+        observer: '_itemsChanged'
+      },
+      // Computed value, true if `items` is set.
+      hasItems: {
+        type: Boolean,
+        readOnly: true,
+        value: false
+      },
+      // True when loading data from the datastore.
+      loading: {
+        type: Boolean,
+        readOnly: true,
+        notify: true
+      },
+      // Current search query.
+      isSearch: {
+        type: Boolean,
+        value: false
+      },
+      // Computed value, true if the requests lists is hidden.
+      listHidden: {
+        type: Boolean,
+        value: true,
+        computed: '_computeListHidden(hasItems, isSearch)'
+      },
+      /**
+       * Computed value. True when the query has been performed and no items
+       * has been returned. It is different from `listHidden` where less
+       * conditions has to be checked. It is set to true when it doesn't
+       * have items, is not loading and is search.
+       */
+      searchListEmpty: {
+        type: Boolean,
+        computed: '_computeSearchListEmpty(hasItems, loading, isSearch)'
+      },
+      /**
+       * A computed flag that determines that the query to the databastore
+       * has been performed and empty result was returned.
+       * This can be true only if not in search.
+       */
+      dataUnavailable: {
+        type: Boolean,
+        computed: '_computeDataUnavailable(hasItems, loading, isSearch)'
+      }
+    },
+
+    observers: ['_refreshOnOpen(_isOpened)'],
+
+    attached: function() {
+      this.listen(window, 'session-cookie-removed', '_onCookieRemoved');
+      this.listen(window, 'session-cookie-changed', '_onCookieChanged');
+    },
+
+    detached: function() {
+      this.unlisten(window, 'session-cookie-removed', '_onCookieRemoved');
+      this.unlisten(window, 'session-cookie-changed', '_onCookieChanged');
+    },
+
+    _refreshOnOpen: function(_isOpened) {
+      if (!_isOpened) {
+        return;
+      }
+      this.reset();
+    },
+
+    reset: function() {
+      this._clearMenuOptions();
+      this._setLoading(false);
+      this.set('cookies', undefined);
+      this.queryCookies();
+    },
+
+    queryCookies: function() {
+      this._setLoading(true);
+      var event = this.fire('session-cookie-list-all', {}, {
+        cancelable: true
+      });
+      if (!event.defaultPrevented) {
+        this._setLoading(false);
+        return Promise.reject(new Error('Cookie bridge not found in the DOM'));
+      }
+      return event.detail.result
+      .then(cookies => this._processCookies(cookies));
+    },
+
+    _processCookies: function(cookies) {
+      this._setLoading(false);
+      if (!cookies || !cookies.length) {
+        return;
+      }
+      this.set('items', cookies);
+    },
+
+    // Computes and sets value for `hasItems` property
+    _itemsChanged: function(value) {
+      if (value && value.length) {
+        this._setHasItems(true);
+      } else {
+        this._setHasItems(false);
+      }
+    },
+
+    /**
+     * Resets the state after finishing search. It restors previous items
+     * without changing query options.
+     */
+    _resetSearch: function() {
+      this.set('items', this._beforeQueryItems);
+      this.isSearch = false;
+      this._beforeQueryItems = undefined;
+      if (!this.items) {
+        this.queryCookies();
+      }
+    },
+
+    /**
+     * Computes value of the `listHidden` property.
+     * List is hidden when no items are found and it is not searching.
+     */
+    _computeListHidden: function(hasItems, isSearch) {
+      if (isSearch) {
+        return false;
+      }
+      return !hasItems;
+    },
+
+    // Computes value for the `searchListEmpty` property
+    _computeSearchListEmpty: function(hasItems, loading, isSearch) {
+      return isSearch && !loading && !hasItems;
+    },
+
+    // Computes value for the `dataUnavailable` proeprty
+    _computeDataUnavailable: function(hasItems, loading, isSearch) {
+      return !isSearch && !loading && !hasItems;
+    },
+
+    // Handles items delete event.
+    _onDelete: function(e) {
+      var data = e.detail.items;
+      return this._delete(data);
+    },
+    /**
+     * Performs a delete action of cookie items.
+     *
+     * @param {Array<Object>} deleted List of deleted items.
+     */
+    _delete: function(deleted) {
+      var event = this.fire('session-cookie-remove', {
+        cookies: deleted
+      }, {
+        cancelable: true,
+        composed: true
+      });
+      if (!event.defaultPrevented) {
+        this.$.noModel.opened = true;
+        return;
+      }
+      return event.detail.result
+      .catch(cause => {
+        let msg = 'Cookie save error ' + cause.message;
+        this.$.errorToast.text = msg;
+        this.$.errorToast.opened = true;
+      });
+    },
+
+    // Handles the export event.
+    _onExport: function(e) {
+      this._exportItems(e.detail.items);
+    },
+
+    // Menu item handler to export all data
+    _onExportAll: function() {
+      this._clearMenuOptions();
+      this._exportItems(this.items);
+    },
+    /**
+     * Dispatches the `export-create-object` event with cookie data and then
+     * `export-data` so the app can export the data.
+     *
+     * @param {Array} requests List of request to export with the project.
+     */
+    _exportItems: function(items) {
+      var event = this.fire('export-create-object', {
+        types: {
+          cookies: items
+        },
+        kind: 'ARC#SessionCookies'
+      }, {
+        cancelable: true,
+        composed: true
+      });
+
+      if (!event.defaultPrevented) {
+        this.$.noExport.opened = true;
+        return;
+      }
+
+      this.fire('export-data', {
+        data: event.detail.result,
+        type: 'application/json',
+        file: 'arc-session-cookies.json'
+      }, {
+        cancelable: true
+      });
+    },
+
+    /**
+     * Handler for the `list-items-search` event fired by the list view
+     * Sets `isSearch` property and calls `query()` function to perform the
+     * query.
+     */
+    _onSearch: function(e) {
+      this.query(e.detail.q);
+    },
+
+    /**
+     * Performs a query on a list.
+     *
+     * @param {String} query The query to performs. Pass empty string
+     * (or nothing) to reset the query.
+     */
+    query: function(query) {
+      if (!query) {
+        return this._resetSearch();
+      }
+      var items = this._beforeQueryItems || this.items;
+      if (!items || !items.length) {
+        return;
+      }
+      this.isSearch = true;
+      if (!this._beforeQueryItems) {
+        this._beforeQueryItems = this.items;
+      }
+      this.set('items', undefined);
+
+      query = query.toLowerCase();
+      var list = items.filter(item => {
+        if (item.name) {
+          if (item.name.toLowerCase().indexOf(query) !== -1) {
+            return true;
+          }
+        }
+        if (item.domain) {
+          if (item.domain.toLowerCase().indexOf(query) !== -1) {
+            return true;
+          }
+        }
+        if (item.value) {
+          if (item.value.toLowerCase().indexOf(query) !== -1) {
+            return true;
+          }
+        }
+        if (item.path) {
+          if (item.path.toLowerCase().indexOf(query) !== -1) {
+            return true;
+          }
+        }
+        return false;
+      });
+      this.set('items', list);
+    },
+
+    _clearMenuOptions: function() {
+      this.$.mainMenu.opened = false;
+      Polymer.RenderStatus.afterNextRender(this, function() {
+        this.$.mainMenuOptions.selected = -1;
+      });
+    },
+
+    // Handler for delete all menu option click
+    _deleteAllClick: function() {
+      this._clearMenuOptions();
+      this.$.dataClearDialog.opened = true;
+    },
+
+    // Called when delete datastore dialog is closed.
+    _onClearDialogResult: function(e, detail) {
+      if (!detail.confirmed) {
+        return;
+      }
+      if (!this.items || !this.items.length) {
+        return;
+      }
+      this._delete(this.items);
+    },
+    /**
+     * Compares two cookies.
+     * Cookies are the same if `domain`, `path` and `name` matches.
+     *
+     * @param {Object} a A cookie to compare
+     * @param {[type]} b Other cookie to compare
+     * @return {Boolean} True if the two cookies are the same.
+     */
+    _compareCookies: function(a, b) {
+      if (a.domain !== b.domain) {
+        return false;
+      }
+      if (a.path !== b.path) {
+        return false;
+      }
+      if (a.name !== b.name) {
+        return false;
+      }
+      return true;
+    },
+
+    /**
+     * Returns cookie index on the `items` list.
+     *
+     * @param {Object} cookie A cookie object as in Electron API.
+     * @return {Number} Cookie index on the list or `-1` if not found.
+     */
+    _getCookieIndex: function(cookie) {
+      var items = this.items;
+      if (!items || !items.length) {
+        return -1;
+      }
+      return items.findIndex(item => this._compareCookies(item, cookie));
+    },
+    // Clears a cookie from the list if matching cookie is n the list.
+    _onCookieRemoved: function(e) {
+      if (e.cancelable) {
+        return;
+      }
+      var cookie = e.detail;
+      var index = this._getCookieIndex(cookie);
+      if (index === -1) {
+        return;
+      }
+      if (this._nextInsertAtPosition) {
+        this._nextInsertAtPosition = false;
+        this._nextInsertPosition = index;
+      }
+      this.splice('items', index, 1);
+    },
+    // Updates the cookie on the list or adds new one.
+    _onCookieChanged: function(e) {
+      var cookie = e.detail;
+      var index = this._getCookieIndex(cookie);
+      if (index === -1) {
+        if (!this.items) {
+          this.set('items', [cookie]);
+        } else {
+          if (this._nextInsertPosition !== undefined) {
+            let items = this.items;
+            items.splice(this._nextInsertPosition, 0, cookie);
+            this._nextInsertPosition = undefined;
+          } else {
+            this.push('items', cookie);
+          }
+        }
+      } else {
+        this.set(['items', index], cookie);
+      }
+    },
+    // Opens details panel for the cookie
+    _onDetails: function(e) {
+      var request = e.detail.item;
+      this.$.details.cookie = request;
+      this.$.detailsContainer.opened = true;
+    },
+
+    // Deletes a request from the details panel.
+    _deleteDetails: function() {
+      var data = [this.$.details.cookie];
+      this.$.detailsContainer.opened = false;
+      return this._delete(data);
+    },
+    /**
+     * Opens request details editor in place of the request details applet.
+     */
+    _editDetails: function() {
+      this.$.editor.cookie = this.$.details.cookie;
+      this.$.details.cookie = undefined;
+      this.$.detailsContainer.opened = false;
+      this.$.editorContainer.opened = true;
+    },
+    // Forces bottom sheet content to resize
+    _resizeSheetContent: function() {
+      this.$.details.notifyResize();
+    },
+    // Forces bottom sheet content to resize
+    _resizeEditorSheetContent: function() {
+      this.$.editor.notifyResize();
+    },
+    // Handles cookie edit cancel event
+    _cancelEdit: function() {
+      this.$.editorContainer.opened = false;
+      this.$.editor.cookie = undefined;
+    },
+    /**
+     * Opens an empty cookie editor.
+     */
+    addCookie: function() {
+      this.$.editor.cookie = undefined;
+      this.$.editorContainer.opened = true;
+    },
+    // Saves cookie editts be sending `session-cookie-udpate` event
+    _saveEdit: function(e) {
+      var cookie = e.detail;
+      var oldCookie = this.$.editor.cookie;
+      if (oldCookie && !this._compareCookies(oldCookie, cookie)) {
+        this._nextInsertAtPosition = true;
+        this._delete([oldCookie]);
+      }
+      this._cancelEdit();
+      var event = this.fire('session-cookie-udpate', {
+        cookie: cookie
+      }, {
+        cancelable: true,
+        composed: true
+      });
+      if (!event.defaultPrevented) {
+        this.$.noModel.opened = true;
+        return;
+      }
+      return event.detail.result
+      .catch(cause => {
+        let msg = 'Cookie save error ' + cause.message;
+        this.$.errorToast.text = msg;
+        this.$.errorToast.opened = true;
+      });
+    }
+
+    /**
+     * Fired when queries the application for list of session cookies.
+     * The element expects the `result` property to be set on the `detail`
+     * object with a promise resolved to a list of cookies.
+     *
+     * This event is cancelable.
+     *
+     * @event session-cookie-list-all
+     */
+
+    /**
+     * Fired when the cookie should be updated by the application.
+     *
+     * The event is cancelable.
+     *
+     * @event session-cookie-udpate
+     * @param {Object} cookie A cookie object.
+     */
+
+    /**
+     * Fired when cookies are to be deleted by the application.
+     *
+     * The event is cancelable.
+     *
+     * @event session-cookie-remove
+     * @param {Array<Object>} cookies A list of cookie objects.
+     */
+  });
+  </script>
+</dom-module>

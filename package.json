@@ -1,0 +1,31 @@
+{
+  "name": "cookie-manager",
+  "version": "0.1.0",
+  "license": "Apache-2.0 OR CC-BY-4.0",
+  "description": "A manager for session cookies. Displays a list of cookies that can be edited",
+  "devDependencies": {
+    "bower": "^1.8.0",
+    "polymer-cli": "^1.2.0"
+  },
+  "private": false,
+  "main": [
+    "cookie-manager.html"
+  ],
+  "author": "The Advanced REST client authors <arc@mulesoft.com>",
+  "scripts": {
+    "serve": "node_modules/.bin/polymer serve",
+    "lint": "node_modules/.bin/polymer lint cookie-manager.html --rules polymer-1",
+    "test-sauce": "node_modules/.bin/polymer test --plugin sauce --job-name \"cookie-manager:local-test\"",
+    "test": "node_modules/.bin/polymer test --plugin local",
+    "deps": "npm install --quiet && bower install --quiet",
+    "update-deps": "npm update --quiet && bower update --quiet"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/advanced-rest-client/cookie-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/advanced-rest-client/cookie-manager/issues",
+    "email": "arc@mulesoft.com"
+  }
+}
