@@ -1,12 +1,12 @@
 const CookieStub = {};
+CookieStub.listHandler = undefined;
 CookieStub.mockBridge = function(cookies) {
-  var clb = function(e) {
+  CookieStub.listHandler = function(e) {
     e.preventDefault();
     e.detail.result = Promise.resolve(cookies);
   };
-  CookieStub.__bridgeCallback = clb;
-  window.addEventListener('session-cookie-list-all', clb);
+  window.addEventListener('session-cookie-list-all', CookieStub.listHandler);
 };
 CookieStub.unmockBridge = function() {
-  window.removeEventListener('session-cookie-list-all', CookieStub.__bridgeCallback);
+  window.removeEventListener('session-cookie-list-all', CookieStub.listHandler);
 };

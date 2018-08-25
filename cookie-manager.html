@@ -28,48 +28,7 @@ the License.
 <link rel="import" href="../cookies-list-items/cookies-list-items.html">
 <link rel="import" href="../cookie-editor/cookie-editor.html">
 <link rel="import" href="../cookie-details/cookie-details.html">
-<!--
-`<cookie-manager>` A manager for session cookies. Displays a list of cookies that can be edited
 
-The element queries the application for cookies to display by sending
-`session-cookie-list-all` custom event. The handler should set a `result` property
-on the details object and cancel the event.
-Result is a promise that resolves to cookies array.
-
-### Example
-
-```
-<cookie-manager on-session-cookie-list-all></cookie-manager>
-<script>
-document.body.querySelector('cookie-manager')
-.addEventListener('session-cookie-list-all', function(e) {
-  e.preventDefault();
-  e.detail.result = Promise.resolve(cookies)
-});
-</script>
-```
-
-The element listens to `session-cookie-removed` and `session-cookie-changed`
-events to update, add or delete a cookie from the list.
-The `detail` object of this events is a cookie.
-
-### Styling
-`<cookie-manager>` provides the following custom properties and mixins for styling:
-
-Custom property | Description | Default
-----------------|-------------|----------
-`--cookie-manager` | Mixin applied to the element | `{}`
-`--cookie-manager-loader` | Mixin applied to the `paper-progress` element | `{}`
-`--warning-primary-color` | Main color of the warning messages | `#FF7043`
-`--warning-contrast-color` | Contrast color for the warning color | `#fff`
-`--error-toast` | Mixin applied to the error toast | `{}`
-`--empty-info` | Mixin applied to the label rendered when no data is available. | `{}`
-`--cookie-manager-bottom-sheet` | Mixin applied to the bottom sheet tutorial element | `{}`
-
-@group UI Elements
-@element cookie-manager
-@demo demo/index.html
--->
 <dom-module id="cookie-manager">
   <template>
     <style>
@@ -141,14 +100,28 @@ Custom property | Description | Default
 
     #detailsContainer,
     #editorContainer {
-      min-width: 40%;
-      max-width: 60%;
-      left: 20%;
+      width: var(--arc-bottom-sheet-width, 100%);
+      max-width: var(--arc-bottom-sheet-max-width, 700px);
+      @apply --shadow-elevation-8dp;
       @apply --cookie-manager-bottom-sheet;
     }
 
     cookies-list-items {
       height: 100%;
+    }
+
+    .menu-item {
+      cursor: pointer;
+      color: var(--context-menu-color, rgba(0, 0, 0, 0.87));
+    }
+
+    .menu-item:not(:focus):hover {
+      color: var(--context-menu-color-hover, currentcolor);
+      background-color: var(--context-menu-background-color-hover, rgba(0, 0, 0, 0.12));
+    }
+
+    .menu-item:not(:focus):hover iron-icon {
+      color: var(--context-menu-color-hover, currentcolor);
     }
     </style>
     <div class="header">
@@ -157,19 +130,23 @@ Custom property | Description | Default
         <paper-menu-button dynamic-align id="mainMenu">
           <paper-icon-button icon="arc:more-vert" slot="dropdown-trigger"></paper-icon-button>
           <paper-listbox slot="dropdown-content" id="mainMenuOptions">
-            <paper-icon-item on-tap="reset">
+            <paper-icon-item on-click="reset" class="menu-item" data-action="refresh-menu">
               <iron-icon icon="arc:cached" slot="item-icon"></iron-icon>
               Refresh list
             </paper-icon-item>
-            <paper-icon-item on-tap="addCookie">
+            <paper-icon-item on-click="addCookie" class="menu-item" data-action="add-item-menu">
               <iron-icon icon="arc:add" slot="item-icon"></iron-icon>
               Add cookie
             </paper-icon-item>
-            <paper-icon-item on-tap="_onExportAll">
+            <paper-icon-item on-click="_exportAllFile" class="menu-item" data-action="export-all-file">
               <iron-icon icon="arc:archive" slot="item-icon"></iron-icon>
-              Export all
+              Export all to file
             </paper-icon-item>
-            <paper-icon-item on-tap="_deleteAllClick">
+            <paper-icon-item on-click="_exportAllDrive" class="menu-item" data-action="export-all-drive">
+              <iron-icon icon="arc:drive-color" slot="item-icon"></iron-icon>
+              Export all to Google Drive
+            </paper-icon-item>
+            <paper-icon-item on-click="_deleteAllClick" class="menu-item" data-action="delete-all">
               <iron-icon icon="arc:delete" slot="item-icon"></iron-icon>
               Delete all
             </paper-icon-item>
@@ -184,7 +161,7 @@ Custom property | Description | Default
 
     <template is="dom-if" if="[[dataUnavailable]]">
       <p class="empty-info">Cookie list is empty.</p>
-      <paper-button class="action-button" data-action="empty-add-cookie" on-tap="addCookie">Create a cookie</paper-button>
+      <paper-button class="action-button" data-action="empty-add-cookie" on-click="addCookie">Create a cookie</paper-button>
     </template>
 
     <template is="dom-if" if="[[!listHidden]]">
@@ -219,26 +196,74 @@ Custom property | Description | Default
       <p>This will remove all session cookies. Without option to restore it.</p>
       <p>Maybe you should create a backup first?</p>
       <div class="buttons">
+        <paper-button on-click="_exportAllFile">Create file backup</paper-button>
         <paper-button dialog-dismiss autofocus>Cancel</paper-button>
         <paper-button dialog-confirm class="action-button">Destroy</paper-button>
       </div>
     </paper-dialog>
   </template>
   <script>
+  /**
+   *
+   * A manager for session cookies.
+   * Renders list of cookies that can be edited.
+   *
+   * The element queries the application for cookies to display by sending
+   * `session-cookie-list-all` custom event. The handler should set a `result` property
+   * on the details object and cancel the event.
+   * Result is a promise that resolves to cookies array.
+   *
+   * ### Example
+   *
+   * ```html
+   * <cookie-manager on-session-cookie-list-all></cookie-manager>
+   * ```
+   *
+   * ```javascript
+   * window.addEventListener('session-cookie-list-all', (e) => {
+   *  e.preventDefault();
+   *  e.detail.result = Promise.resolve(cookies);
+   * });
+   * ```
+   *
+   * The element listens to `session-cookie-removed` and `session-cookie-changed`
+   * events to update, add or delete a cookie from the list.
+   * The `detail` object of this events is a cookie.
+   *
+   * ### Styling
+   *
+   * `<cookie-manager>` provides the following custom properties and mixins for styling:
+   *
+   * Custom property | Description | Default
+   * ----------------|-------------|----------
+   * `--cookie-manager` | Mixin applied to the element | `{}`
+   * `--cookie-manager-loader` | Mixin applied to the `paper-progress` element | `{}`
+   * `--warning-primary-color` | Main color of the warning messages | `#FF7043`
+   * `--warning-contrast-color` | Contrast color for the warning color | `#fff`
+   * `--error-toast` | Mixin applied to the error toast | `{}`
+   * `--empty-info` | Mixin applied to the label rendered when no data is available. | `{}`
+   * `--cookie-manager-bottom-sheet` | Mixin applied to the bottom sheet tutorial element | `{}`
+   * `--context-menu-color` | Context menu color | `--context-menu-color` or `rgba(0, 0, 0, 0.87)`
+   * `--context-menu-color-hover` | Context menu color when hovered | `currentcolor`
+   * `--context-menu-background-color-hover` | Menu bg color when hovered | `rgba(0, 0, 0, 0.12)`
+   *
+   * @polymer
+   * @customElement
+   * @memberof UiElements
+   * @demo demo/index.html
+   */
   class CookieManager extends Polymer.Element {
     static get is() {return 'cookie-manager';}
     static get properties() {
       return {
         // List of cookies to display
-        items: {
-          type: Array,
-          observer: '_itemsChanged'
-        },
+        items: {type: Array},
         // Computed value, true if `items` is set.
         hasItems: {
           type: Boolean,
-          readOnly: true,
-          value: false
+          value: false,
+          computed: '_computeHasItems(items.length)',
+          notify: true
         },
         // True when loading data from the datastore.
         loading: {
@@ -251,7 +276,9 @@ Custom property | Description | Default
           type: Boolean,
           value: false
         },
-        // Computed value, true if the requests lists is hidden.
+        /**
+         * Computed value, `true` when the lists is hidden.
+         */
         listHidden: {
           type: Boolean,
           value: true,
@@ -308,7 +335,11 @@ Custom property | Description | Default
       this.set('cookies', undefined);
       this.queryCookies();
     }
-
+    /**
+     * Queries application for list of cookies.
+     * It dispatches `session-cookie-list-all` cuystom event.
+     * @return {Promise} Resolved when cookies are available.
+     */
     queryCookies() {
       this._setLoading(true);
       const e = new CustomEvent('session-cookie-list-all', {
@@ -323,26 +354,27 @@ Custom property | Description | Default
         return Promise.reject(new Error('Cookie bridge not found in the DOM'));
       }
       return e.detail.result
-      .then((cookies) => this._processCookies(cookies));
+      .then((cookies) => this._processCookies(cookies))
+      .then(() => this._setLoading(false));
     }
-
+    /**
+     * Processes incomming and sets cookies.
+     * @param {?Array<Object>} cookies
+     */
     _processCookies(cookies) {
-      this._setLoading(false);
-      if (!cookies || !cookies.length) {
-        return;
+      if (!cookies) {
+        cookies = [];
       }
       this.set('items', cookies);
     }
-
-    // Computes and sets value for `hasItems` property
-    _itemsChanged(value) {
-      if (value && value.length) {
-        this._setHasItems(true);
-      } else {
-        this._setHasItems(false);
-      }
+    /**
+     * Computes value for `hasItems` property
+     * @param {Number} size Size of the `items` array
+     * @return {Boolean}
+     */
+    _computeHasItems(size) {
+      return !!size;
     }
-
     /**
      * Resets the state after finishing search. It restors previous items
      * without changing query options.
@@ -351,7 +383,7 @@ Custom property | Description | Default
       this.set('items', this._beforeQueryItems);
       this.isSearch = false;
       this._beforeQueryItems = undefined;
-      if (!this.items) {
+      if (!this.items || !this.items.length) {
         this.queryCookies();
       }
     }
@@ -411,38 +443,57 @@ Custom property | Description | Default
         const msg = 'Cookie save error ' + cause.message;
         this.$.errorToast.text = msg;
         this.$.errorToast.opened = true;
+        throw cause;
       });
     }
 
-    // Handles the export event.
+    /**
+     * Handles export event from the list.
+     * @param {CustomEvent} e
+     */
     _onExport(e) {
-      this._exportItems(e.detail.items);
+      this._exportItems(e.detail.items, e.detail.destination);
     }
 
-    // Menu item handler to export all data
-    _onExportAll() {
+    /**
+     * Menu item handler to export all data to file
+     */
+    _exportAllFile() {
       this._clearMenuOptions();
-      this._exportItems(this.items);
+      this._exportItems(this.items, 'file');
+    }
+
+    /**
+     * Menu item handler to export all data to file
+     */
+    _exportAllDrive() {
+      this._clearMenuOptions();
+      this._exportItems(this.items, 'drive');
     }
     /**
      * Dispatches `export-data` custom event
      *
      * @param {Array} items List of request to export with the project.
+     * @param {String} destination Export destination.
      */
-    _exportItems(items) {
+    _exportItems(items, destination) {
+      if (!destination) {
+        destination = 'file';
+      }
       const e = new CustomEvent('export-data', {
         bubbles: true,
         composed: true,
         cancelable: true,
         detail: {
           file: 'arc-session-cookies.json',
-          destination: 'file',
+          destination,
           type: 'arc-export',
           data: {
             cookies: items
           }
         }
       });
+      this.dispatchEvent(e);
       if (!e.defaultPrevented) {
         this.$.noExport.opened = true;
         return;
@@ -507,9 +558,7 @@ Custom property | Description | Default
 
     _clearMenuOptions() {
       this.$.mainMenu.opened = false;
-      Polymer.RenderStatus.afterNextRender(this, () => {
-        this.$.mainMenuOptions.selected = -1;
-      });
+      this.$.mainMenuOptions.selected = -1;
     }
 
     // Handler for delete all menu option click
@@ -640,6 +689,7 @@ Custom property | Description | Default
      * Opens an empty cookie editor.
      */
     addCookie() {
+      this._clearMenuOptions();
       this.$.editor.cookie = undefined;
       this.$.editorContainer.opened = true;
     }
@@ -664,6 +714,7 @@ Custom property | Description | Default
           cookie: cookie
         }
       });
+      this.dispatchEvent(ec);
       if (!ec.defaultPrevented) {
         this.$.noModel.opened = true;
         return;
