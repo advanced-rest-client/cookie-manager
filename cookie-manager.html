@@ -28,7 +28,7 @@ the License.
 <link rel="import" href="../cookies-list-items/cookies-list-items.html">
 <link rel="import" href="../cookie-editor/cookie-editor.html">
 <link rel="import" href="../cookie-details/cookie-details.html">
-
+<link rel="import" href="../paper-fab/paper-fab.html">
 <dom-module id="cookie-manager">
   <template>
     <style>
@@ -123,6 +123,12 @@ the License.
     .menu-item:not(:focus):hover iron-icon {
       color: var(--context-menu-color-hover, currentcolor);
     }
+
+    .add-fab {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+    }
     </style>
     <div class="header">
       <h2>Session cookies</h2>
@@ -201,6 +207,8 @@ the License.
         <paper-button dialog-confirm class="action-button">Destroy</paper-button>
       </div>
     </paper-dialog>
+
+    <paper-fab icon="arc:add" class="add-fab" on-click="addCookie"></paper-fab>
   </template>
   <script>
   /**
