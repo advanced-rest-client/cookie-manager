@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "description": "A manager for session cookies. Displays a list of cookies that can be edited",
   "devDependencies": {
-    "@polymer/gen-typescript-declarations": "^1.1.1"
+    "@polymer/gen-typescript-declarations": "^1.5.1"
   },
   "private": false,
   "main": "cookie-manager.html",

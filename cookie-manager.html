@@ -35,6 +35,7 @@ the License.
     :host {
       display: block;
       position: relative;
+      @apply --arc-font-body1;
       @apply --layout-vertical;
       @apply --cookie-manager;
     }
@@ -55,12 +56,23 @@ the License.
       @apply --arc-font-subhead;
     }
 
-    paper-button>iron-icon {
-      margin-left: 12px;
+    paper-listbox iron-icon {
+      color: var(--context-menu-item-color);
     }
 
-    paper-listbox iron-icon {
-      color: rgba(0, 0, 0, 0.54);
+    paper-listbox paper-icon-item {
+      color: var(--context-menu-item-color);
+      background-color: var(--context-menu-item-background-color);
+      cursor: pointer;
+    }
+
+    paper-listbox paper-icon-item:hover {
+      color: var(--context-menu-item-color-hover);
+      background-color: var(--context-menu-item-background-color-hover);
+    }
+
+    paper-listbox paper-icon-item:hover iron-icon {
+      color: var(--context-menu-item-color-hover);
     }
 
     [hidden] {
@@ -78,8 +90,8 @@ the License.
     }
 
     #dataClearDialog paper-button {
-      color: #fff;
-      background-color: transparent;
+      color: var(--warning-dialog-button-color, #fff);
+      background-color: var(--warning-dialog-button-background-color, transparent);
     }
 
     .error-toast {
@@ -100,28 +112,15 @@ the License.
 
     #detailsContainer,
     #editorContainer {
-      width: var(--arc-bottom-sheet-width, 100%);
-      max-width: var(--arc-bottom-sheet-max-width, 700px);
-      @apply --shadow-elevation-8dp;
+      width: var(--bottom-sheet-width, 100%);
+      max-width: var(--bottom-sheet-max-width, 700px);
+      right: var(--cookie-manager-bottom-sheet-right, 40px);
+      left: var(--cookie-manager-bottom-sheet-left, auto);
       @apply --cookie-manager-bottom-sheet;
     }
 
     cookies-list-items {
       height: 100%;
-    }
-
-    .menu-item {
-      cursor: pointer;
-      color: var(--context-menu-color, rgba(0, 0, 0, 0.87));
-    }
-
-    .menu-item:not(:focus):hover {
-      color: var(--context-menu-color-hover, currentcolor);
-      background-color: var(--context-menu-background-color-hover, rgba(0, 0, 0, 0.12));
-    }
-
-    .menu-item:not(:focus):hover iron-icon {
-      color: var(--context-menu-color-hover, currentcolor);
     }
 
     .add-fab {
@@ -251,9 +250,14 @@ the License.
    * `--error-toast` | Mixin applied to the error toast | `{}`
    * `--empty-info` | Mixin applied to the label rendered when no data is available. | `{}`
    * `--cookie-manager-bottom-sheet` | Mixin applied to the bottom sheet tutorial element | `{}`
-   * `--context-menu-color` | Context menu color | `--context-menu-color` or `rgba(0, 0, 0, 0.87)`
-   * `--context-menu-color-hover` | Context menu color when hovered | `currentcolor`
-   * `--context-menu-background-color-hover` | Menu bg color when hovered | `rgba(0, 0, 0, 0.12)`
+   * `--context-menu-item-color` | Color of the dropdown menu items | ``
+   * `--context-menu-item-background-color` | Background olor of the dropdown menu items | ``
+   * `--context-menu-item-color-hover` | Color of the dropdown menu items when hovering | ``
+   * `--context-menu-item-background-color-hover` | Background olor of the dropdown menu items when hovering | ``
+   * `--bottom-sheet-width` | Width of the `<bottom-sheet>` element | `100%`
+   * `--bottom-sheet-max-width` | Max width of the `<bottom-sheet>` element | `700px`
+   * `--cookie-manager-bottom-sheet-right` | Right position of the `<bottom-sheet>` element | `40px`
+   * `--cookie-manager-bottom-sheet-left` | Left position of the `<bottom-sheet>` element | `auto`
    *
    * @polymer
    * @customElement
