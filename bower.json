@@ -32,9 +32,9 @@
     "paper-dialog": "PolymerElements/paper-dialog#^2.0.0",
     "tutorial-toast": "advanced-rest-client/tutorial-toast#^2.0.0",
     "bottom-sheet": "advanced-rest-client/bottom-sheet#^2.0.0",
-    "cookies-list-items": "advanced-rest-client/cookies-list-items#2.0.0-preview",
-    "cookie-editor": "advanced-rest-client/cookie-editor#2.0.0-preview",
-    "cookie-details": "advanced-rest-client/cookie-details#2.0.0-preview",
+    "cookies-list-items": "advanced-rest-client/cookies-list-items#^2.0.0",
+    "cookie-editor": "advanced-rest-client/cookie-editor#^2.0.0",
+    "cookie-details": "advanced-rest-client/cookie-details#^2.0.0",
     "paper-fab": "PolymerElements/paper-fab#^2.0.0"
   },
   "devDependencies": {
