@@ -1,7 +1,7 @@
 {
   "name": "cookie-manager",
   "description": "A manager for session cookies. Displays a list of cookies that can be edited",
-  "version": "2.0.0-preview",
+  "version": "2.0.0",
   "license": "Apache-2.0",
   "authors": [
     "Pawel Psztyc",
