@@ -8,6 +8,10 @@
  *   cookie-manager.html
  */
 
+
+// tslint:disable:variable-name Describing an API that's defined elsewhere.
+// tslint:disable:no-any describes the API as best we are able today
+
 /// <reference path="../polymer/types/polymer-element.d.ts" />
 /// <reference path="../iron-flex-layout/iron-flex-layout.d.ts" />
 /// <reference path="../paper-button/paper-button.d.ts" />
@@ -224,7 +228,7 @@ declare namespace UiElements {
     /**
      * Called when delete datastore dialog is closed.
      */
-    _onClearDialogResult(e: any, detail: any): void;
+    _onClearDialogResult(e: any): void;
 
     /**
      * Compares two cookies.
