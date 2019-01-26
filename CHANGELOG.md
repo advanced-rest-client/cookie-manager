@@ -18,3 +18,26 @@
 
 
 
+# [2.0.0](https://github.com/advanced-rest-client/cookie-manager/compare/0.1.1...2.0.0) (2019-01-26)
+
+
+### Docs
+
+* Updating polymer docs ([21b65d9199a6691dad0bcdbc14c2bd029ee557e6](https://github.com/advanced-rest-client/cookie-manager/commit/21b65d9199a6691dad0bcdbc14c2bd029ee557e6))
+
+### Fix
+
+* Bonus fix for https://github.com/advanced-rest-client/arc-electron/issues/24 ([6d309007ee4a3022dfdaf25f3ad3922f3d5abb98](https://github.com/advanced-rest-client/cookie-manager/commit/6d309007ee4a3022dfdaf25f3ad3922f3d5abb98))
+
+### New
+
+* Adding test coverage ([55b56b0bc17f41ca82267899f112de58912634ed](https://github.com/advanced-rest-client/cookie-manager/commit/55b56b0bc17f41ca82267899f112de58912634ed))
+
+### Update
+
+* Adding paper-fab as the add action ([31c3e113c59a2828a2a10d7532d95cd0ec68c1cb](https://github.com/advanced-rest-client/cookie-manager/commit/31c3e113c59a2828a2a10d7532d95cd0ec68c1cb))
+* removing old CI files ([c102e7c5ee58264f4b4df5d6d6798b56a8d38dbe](https://github.com/advanced-rest-client/cookie-manager/commit/c102e7c5ee58264f4b4df5d6d6798b56a8d38dbe))
+* Updating tests ([a2dd9f2a63e9d98cc9dc9265ca0ff396048f6a13](https://github.com/advanced-rest-client/cookie-manager/commit/a2dd9f2a63e9d98cc9dc9265ca0ff396048f6a13))
+
+
+
