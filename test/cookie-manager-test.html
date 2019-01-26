@@ -369,6 +369,22 @@
           done();
         });
       });
+
+      test('_onDelete() calls _delete() with an argument', () => {
+        element.addEventListener('session-cookie-remove', (e) => {
+          e.preventDefault();
+          e.detail.result = Promise.resolve();
+        });
+        const items = [{name: test}];
+        const spy = sinon.spy(element, '_delete');
+        element._onDelete({
+          detail: {
+            items
+          }
+        });
+        assert.isTrue(spy.called);
+        assert.deepEqual(spy.args[0][0], items);
+      });
     });
 
     suite('Export options', function() {
@@ -487,6 +503,435 @@
       test('Computes listHidden property', function() {
         assert.isFalse(element.listHidden);
       });
+    });
+  });
+
+  suite('_onSearch()', () => {
+    let cookies;
+    suiteSetup(function() {
+      cookies = DataGenerator.generateCookiesData({
+        size: 1
+      });
+      CookieStub.mockBridge(cookies);
+    });
+
+    suiteTeardown(function() {
+      CookieStub.unmockBridge();
+    });
+
+    let element;
+    setup(() => {
+      element = fixture('Basic');
+    });
+
+    test('Calls query() with an argument', () => {
+      const spy = sinon.spy(element, 'query');
+      element._onSearch({
+        detail: {
+          q: 'test'
+        }
+      });
+      assert.isTrue(spy.called);
+      assert.equal(spy.args[0][0], 'test');
+    });
+  });
+
+  suite('query()', function() {
+    let cookies;
+    suiteSetup(function() {
+      cookies = DataGenerator.generateCookiesData({
+        size: 10
+      });
+      CookieStub.mockBridge(cookies);
+    });
+
+    suiteTeardown(function() {
+      CookieStub.unmockBridge();
+    });
+
+    let element;
+    setup((done) => {
+      element = fixture('Basic');
+      element.addEventListener('has-items-changed', function f(e) {
+        if (!e.detail.value) {
+          return;
+        }
+        element.removeEventListener('has-items-changed', f);
+        flush(() => done());
+      });
+    });
+
+    test('Calls _resetSearch() when no argument', () => {
+      const spy = sinon.spy(element, '_resetSearch');
+      element.query();
+      assert.isTrue(spy.called);
+    });
+
+    test('Sets isSearch property', () => {
+      element.query('test');
+      assert.isTrue(element.isSearch);
+    });
+
+    test('Sets _beforeQueryItems property', () => {
+      element.query('test');
+      assert.lengthOf(element._beforeQueryItems, 10);
+    });
+
+    test('Won\'t set _beforeQueryItems property when already set', () => {
+      const items = [{name: 'test'}];
+      element._beforeQueryItems = items;
+      element.query('test');
+      assert.isTrue(element._beforeQueryItems === items);
+    });
+
+    test('Filters by name', () => {
+      const name = 'test-name';
+      element.items[0].name = name;
+      element.query(name);
+      assert.lengthOf(element.items, 1);
+      assert.equal(element.items[0].name, name);
+    });
+
+    test('Filters by name case insensitive', () => {
+      const name = 'Test-Name';
+      element.items[0].name = name;
+      element.query('tesT-namE');
+      assert.lengthOf(element.items, 1);
+      assert.equal(element.items[0].name, name);
+    });
+
+    test('Filters by domain', () => {
+      const domain = 'test-domain';
+      element.items[0].domain = domain;
+      element.query(domain);
+      assert.lengthOf(element.items, 1);
+      assert.equal(element.items[0].domain, domain);
+    });
+
+    test('Filters by domain case insensitive', () => {
+      const domain = 'Test-Domain';
+      element.items[0].domain = domain;
+      element.query('tesT-domaiN');
+      assert.lengthOf(element.items, 1);
+      assert.equal(element.items[0].domain, domain);
+    });
+
+    test('Filters by value', () => {
+      const value = 'test-value';
+      element.items[0].value = value;
+      element.query(value);
+      assert.lengthOf(element.items, 1);
+      assert.equal(element.items[0].value, value);
+    });
+
+    test('Filters by value case insensitive', () => {
+      const value = 'Test-Value';
+      element.items[0].value = value;
+      element.query('tesT-valuE');
+      assert.lengthOf(element.items, 1);
+      assert.equal(element.items[0].value, value);
+    });
+
+    test('Filters by path', () => {
+      const path = 'test-path';
+      element.items[0].path = path;
+      element.query(path);
+      assert.lengthOf(element.items, 1);
+      assert.equal(element.items[0].path, path);
+    });
+
+    test('Filters by path case insensitive', () => {
+      const path = 'Test-Path';
+      element.items[0].path = path;
+      element.query('tesT-patH');
+      assert.lengthOf(element.items, 1);
+      assert.equal(element.items[0].path, path);
+    });
+
+    test('Resets the items when no argument', () => {
+      element.query('test-non-existing');
+      assert.lengthOf(element.items, 0);
+      element.query('');
+      assert.lengthOf(element.items, 10);
+    });
+  });
+
+  suite('_deleteAllClick()', () => {
+    suiteSetup(function() {
+      CookieStub.mockBridge();
+    });
+
+    suiteTeardown(function() {
+      CookieStub.unmockBridge();
+    });
+
+    let element;
+    setup((done) => {
+      element = fixture('Basic');
+      flush(() => done());
+    });
+
+    test('Calls _clearMenuOptions()', () => {
+      const spy = sinon.spy(element, '_clearMenuOptions');
+      element._deleteAllClick();
+      assert.isTrue(spy.called);
+    });
+
+    test('Opens working dialog', () => {
+      element._deleteAllClick();
+      assert.isTrue(element.$.dataClearDialog.opened);
+    });
+  });
+
+  suite('_onClearDialogResult()', () => {
+    suiteSetup(function() {
+      CookieStub.mockBridge();
+    });
+
+    suiteTeardown(function() {
+      CookieStub.unmockBridge();
+    });
+
+    let element;
+    setup((done) => {
+      element = fixture('Basic');
+      flush(() => done());
+    });
+
+    test('Ignores not confirmed dialog', () => {
+      const spy = sinon.spy(element, '_delete');
+      element._onClearDialogResult({
+        detail: {
+          confirmed: false
+        }
+      });
+      assert.isFalse(spy.called);
+    });
+
+    test('Ignores action when no items', () => {
+      const spy = sinon.spy(element, '_delete');
+      element.items = undefined;
+      element._onClearDialogResult({
+        detail: {
+          confirmed: true
+        }
+      });
+      assert.isFalse(spy.called);
+    });
+
+    test('Ignores action when items is empty', () => {
+      const spy = sinon.spy(element, '_delete');
+      element.items = [];
+      element._onClearDialogResult({
+        detail: {
+          confirmed: true
+        }
+      });
+      assert.isFalse(spy.called);
+    });
+
+    test('Calls _delete with an argument', () => {
+      const spy = sinon.spy(element, '_delete');
+      element.items = [{name: 'test'}];
+      element._onClearDialogResult({
+        detail: {
+          confirmed: true
+        }
+      });
+      assert.isTrue(spy.called);
+      assert.deepEqual(spy.args[0][0], element.items);
+    });
+  });
+
+  suite('_compareCookies()', () => {
+    suiteSetup(function() {
+      CookieStub.mockBridge();
+    });
+
+    suiteTeardown(function() {
+      CookieStub.unmockBridge();
+    });
+
+    let element;
+    setup(() => {
+      element = fixture('Basic');
+    });
+
+    test('Returns false when domain do not match', () => {
+      const a = {domain: 'a'};
+      const b = {domain: 'b'};
+      const result = element._compareCookies(a, b);
+      assert.isFalse(result);
+    });
+
+    test('Returns false when path do not match', () => {
+      const a = {domain: 'a', path: 'a'};
+      const b = {domain: 'a', path: 'b'};
+      const result = element._compareCookies(a, b);
+      assert.isFalse(result);
+    });
+
+    test('Returns false when name do not match', () => {
+      const a = {domain: 'a', path: 'a', name: 'a'};
+      const b = {domain: 'a', path: 'a', name: 'b'};
+      const result = element._compareCookies(a, b);
+      assert.isFalse(result);
+    });
+
+    test('Returns true otherwise', () => {
+      const a = {domain: 'a', path: 'a', name: 'a'};
+      const b = {domain: 'a', path: 'a', name: 'a'};
+      const result = element._compareCookies(a, b);
+      assert.isTrue(result);
+    });
+  });
+
+  suite('_getCookieIndex()', () => {
+    suiteSetup(function() {
+      CookieStub.mockBridge();
+    });
+
+    suiteTeardown(function() {
+      CookieStub.unmockBridge();
+    });
+
+    let element;
+    setup(() => {
+      element = fixture('Basic');
+      element.items = DataGenerator.generateCookiesData({
+        size: 3
+      });
+    });
+
+    test('Returns cookie index', () => {
+      const result = element._getCookieIndex(element.items[1]);
+      assert.equal(result, 1);
+    });
+
+    test('Returns -1 when not found', () => {
+      const result = element._getCookieIndex({name: 'a', path: 'b', domain: 'c'});
+      assert.equal(result, -1);
+    });
+
+    test('Returns -1 when no items', () => {
+      element.items = undefined;
+      const result = element._getCookieIndex({name: 'a', path: 'b', domain: 'c'});
+      assert.equal(result, -1);
+    });
+
+    test('Returns -1 when items is empty', () => {
+      element.items = [];
+      const result = element._getCookieIndex({name: 'a', path: 'b', domain: 'c'});
+      assert.equal(result, -1);
+    });
+  });
+
+  suite('_onCookieRemoved()', () => {
+    suiteSetup(function() {
+      CookieStub.mockBridge();
+    });
+
+    suiteTeardown(function() {
+      CookieStub.unmockBridge();
+    });
+
+    let element;
+    setup(() => {
+      element = fixture('Basic');
+      element.items = DataGenerator.generateCookiesData({
+        size: 3
+      });
+    });
+
+    function fire(cookie, cancelable) {
+      if (cancelable === undefined) {
+        cancelable = false;
+      }
+      const e = new CustomEvent('session-cookie-removed', {
+        bubbles: true,
+        cancelable,
+        detail: cookie
+      });
+      document.body.dispatchEvent(e);
+    }
+
+    test('Ignores cancelable events', () => {
+      fire(element.items[0], true);
+      assert.lengthOf(element.items, 3);
+    });
+
+    test('Removes a cookie', () => {
+      fire(element.items[1]);
+      assert.lengthOf(element.items, 2);
+    });
+
+    test('Ignores action when cookie not found', () => {
+      fire({name: 'a', domain: 'b', path: 'c'});
+      assert.lengthOf(element.items, 3);
+    });
+
+    test('Resets _nextInsertAtPosition', () => {
+      element._nextInsertAtPosition = true;
+      fire(element.items[1]);
+      assert.isFalse(element._nextInsertAtPosition);
+    });
+
+    test('Sets _nextInsertPosition', () => {
+      element._nextInsertAtPosition = true;
+      fire(element.items[2]);
+      assert.equal(element._nextInsertPosition, 2);
+    });
+  });
+
+  suite('_onCookieChanged()', () => {
+    suiteSetup(function() {
+      CookieStub.mockBridge();
+    });
+
+    suiteTeardown(function() {
+      CookieStub.unmockBridge();
+    });
+
+    let element;
+    setup(() => {
+      element = fixture('Basic');
+      element.items = DataGenerator.generateCookiesData({
+        size: 3
+      });
+    });
+
+    function fire(cookie) {
+      const e = new CustomEvent('session-cookie-changed', {
+        bubbles: true,
+        detail: cookie
+      });
+      document.body.dispatchEvent(e);
+    }
+
+    test('Updates existing cookie', () => {
+      const cookie = Object.assign({}, element.items[0]);
+      cookie.value = 'test-value';
+      fire(cookie);
+      assert.equal(element.items[0].value, 'test-value');
+    });
+
+    test('Adds new cookie', () => {
+      fire({name: 'a', domain: 'b', path: 'c'});
+      assert.lengthOf(element.items, 4);
+      assert.equal(element.items[3].name, 'a');
+    });
+
+    test('Creates items', () => {
+      element.items = undefined;
+      fire({name: 'a', domain: 'b', path: 'c'});
+      assert.lengthOf(element.items, 1);
+    });
+
+    test('Updates cookie at position', () => {
+      element._nextInsertPosition = 1;
+      const cookie = {name: 'a', domain: 'b', path: 'c'};
+      fire(cookie);
+      assert.deepEqual(element.items[1], cookie);
     });
   });
   </script>

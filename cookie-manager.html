@@ -579,14 +579,15 @@ the License.
       this.$.dataClearDialog.opened = true;
     }
     // Called when delete datastore dialog is closed.
-    _onClearDialogResult(e, detail) {
-      if (!detail.confirmed) {
+    _onClearDialogResult(e) {
+      if (!e.detail.confirmed) {
         return;
       }
-      if (!this.items || !this.items.length) {
+      const items = this.items;
+      if (!items || !items.length) {
         return;
       }
-      this._delete(this.items);
+      this._delete(items);
     }
     /**
      * Compares two cookies.
