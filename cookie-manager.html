@@ -29,6 +29,7 @@ the License.
 <link rel="import" href="../cookie-editor/cookie-editor.html">
 <link rel="import" href="../cookie-details/cookie-details.html">
 <link rel="import" href="../paper-fab/paper-fab.html">
+<link rel="import" href="../export-options/export-options.html">
 <dom-module id="cookie-manager">
   <template>
     <style>
@@ -111,7 +112,8 @@ the License.
     }
 
     #detailsContainer,
-    #editorContainer {
+    #editorContainer,
+    #exportOptionsContainer {
       width: var(--bottom-sheet-width, 100%);
       max-width: var(--bottom-sheet-max-width, 700px);
       right: var(--cookie-manager-bottom-sheet-right, 40px);
@@ -143,13 +145,9 @@ the License.
               <iron-icon icon="arc:add" slot="item-icon"></iron-icon>
               Add cookie
             </paper-icon-item>
-            <paper-icon-item on-click="_exportAllFile" class="menu-item" data-action="export-all-file">
-              <iron-icon icon="arc:archive" slot="item-icon"></iron-icon>
-              Export all to file
-            </paper-icon-item>
-            <paper-icon-item on-click="_exportAllDrive" class="menu-item" data-action="export-all-drive">
-              <iron-icon icon="arc:drive-color" slot="item-icon"></iron-icon>
-              Export all to Google Drive
+            <paper-icon-item class="menu-item" on-click="openExportAll" data-action="export-all">
+              <iron-icon icon="arc:export-variant" slot="item-icon"></iron-icon>
+              Export all
             </paper-icon-item>
             <paper-icon-item on-click="_deleteAllClick" class="menu-item" data-action="delete-all">
               <iron-icon icon="arc:delete" slot="item-icon"></iron-icon>
@@ -191,10 +189,14 @@ the License.
     <bottom-sheet id="editorContainer" on-iron-overlay-opened="_resizeEditorSheetContent">
       <cookie-editor id="editor" on-cancel-cookie-edit="_cancelEdit" on-save-cookie="_saveEdit"></cookie-editor>
     </bottom-sheet>
+    <bottom-sheet id="exportOptionsContainer" opened="{{_exportOptionsOpened}}" on-iron-overlay-opened="_resizeExportContent">
+      <export-options id="exportOptions" file="{{_exportOptions.file}}" provider="{{_exportOptions.provider}}" provider-options="{{_exportOptions.providerOptions}}" on-accept="_acceptExportOptions" on-cancel="_cancelExportOptions"></export-options>
+    </bottom-sheet>
 
     <paper-toast id="noModel" class="error-toast" text="Model not found. Please, report an issue."></paper-toast>
     <paper-toast id="errorToast" class="error-toast" duration="5000"></paper-toast>
     <paper-toast id="noExport" class="error-toast" text="Export module not found. Please, report an issue."></paper-toast>
+    <paper-toast id="driveSaved" text="Requests saved on Google Drive."></paper-toast>
 
     <paper-dialog id="dataClearDialog" on-iron-overlay-closed="_onClearDialogResult">
       <h2>Danger zone</h2>
@@ -265,7 +267,9 @@ the License.
    * @demo demo/index.html
    */
   class CookieManager extends Polymer.Element {
-    static get is() {return 'cookie-manager';}
+    static get is() {
+      return 'cookie-manager';
+    }
     static get properties() {
       return {
         // List of cookies to display
@@ -315,7 +319,23 @@ the License.
           type: Boolean,
           computed: '_computeDataUnavailable(hasItems, loading, isSearch)'
         },
-        _tutorialAllowed: Boolean
+        _tutorialAllowed: Boolean,
+        /**
+         * Indicates that the export options panel is currently rendered.
+         */
+        _exportOptionsOpened: Boolean,
+        _exportOptions: {
+          type: Object,
+          value: function() {
+            return {
+              file: this._generateFileName(),
+              provider: 'file',
+              providerOptions: {
+                parents: ['My Drive']
+              }
+            };
+          }
+        }
       };
     }
 
@@ -460,56 +480,101 @@ the License.
     }
 
     /**
-     * Handles export event from the list.
+     * Handler for `accept` event dispatched by export options element.
      * @param {CustomEvent} e
+     * @return {Promise} Result of calling `_doExportItems()`
      */
-    _onExport(e) {
-      this._exportItems(e.detail.items, e.detail.destination);
+    _acceptExportOptions(e) {
+      this._exportOptionsOpened = false;
+      const detail = e.detail;
+      return this._doExportItems(this._exportItems, detail);
     }
 
-    /**
-     * Menu item handler to export all data to file
-     */
-    _exportAllFile() {
-      this._clearMenuOptions();
-      this._exportItems(this.items, 'file');
-    }
-
-    /**
-     * Menu item handler to export all data to file
-     */
-    _exportAllDrive() {
-      this._clearMenuOptions();
-      this._exportItems(this.items, 'drive');
+    _cancelExportOptions() {
+      this._exportOptionsOpened = false;
+      this._exportItems = undefined;
     }
     /**
-     * Dispatches `export-data` custom event
+     * Calls `_dispatchExportData()` from requests lists mixin with
+     * prepared arguments
      *
-     * @param {Array} items List of request to export with the project.
-     * @param {String} destination Export destination.
+     * @param {Array<Object>} cookies List of cookies to export.
+     * @param {String} detail Export configuration
+     * @return {Promise}
      */
-    _exportItems(items, destination) {
-      if (!destination) {
-        destination = 'file';
+    _doExportItems(cookies, detail) {
+      detail.options.kind = 'ARC#SessionCookies';
+      const request = this._dispatchExportData(cookies, detail);
+      if (!request.detail.result) {
+        this.$.noExport.opened = true;
+        return Promise.resolve();
       }
-      const e = new CustomEvent('export-data', {
+      return request.detail.result
+      .then(() => {
+        if (detail.options.provider === 'drive') {
+          // TODO: Render link to the folder
+          this.$.driveSaved.opened = true;
+        }
+        this._exportItems = undefined;
+      })
+      .catch((cause) => {
+        this.$.errorToast.text = cause.message;
+        this.$.errorToast.opened = true;
+        console.warn(cause);
+      });
+    }
+    /**
+     * Dispatches `arc-data-export` event and returns it.
+     * @param {Array<Object>} cookies List of cookies to export.
+     * @param {Object} opts
+     * @return {CustomEvent}
+     */
+    _dispatchExportData(cookies, opts) {
+      const e = new CustomEvent('arc-data-export', {
         bubbles: true,
         composed: true,
         cancelable: true,
         detail: {
-          file: 'arc-session-cookies.json',
-          destination,
-          type: 'arc-export',
+          options: opts.options,
+          providerOptions: opts.providerOptions,
           data: {
-            cookies: items
+            cookies
           }
         }
       });
       this.dispatchEvent(e);
-      if (!e.defaultPrevented) {
-        this.$.noExport.opened = true;
-        return;
-      }
+      return e;
+    }
+    /**
+     * Handles export event from the list.
+     * @param {CustomEvent} e
+     */
+    _onExport(e) {
+      this._exportOptionsOpened = true;
+      this._exportItems = e.detail.items || [];
+    }
+
+    /**
+     * Menu item handler to export all data to file
+     * @return {Promise} Result of calling `_doExportItems()`
+     */
+    _exportAllFile() {
+      const detail = {
+        options: {
+          file: this._generateFileName(),
+          provider: 'file'
+        }
+      };
+      return this._doExportItems(true, detail);
+    }
+
+    /**
+     * Menu item handler to export all data to file
+     */
+    openExportAll() {
+      this._clearMenuOptions();
+      this._exportOptionsOpened = true;
+      this._exportItems = true;
     }
     /**
      * Handler for the `list-items-search` event fired by the list view
@@ -693,6 +758,10 @@ the License.
     _resizeEditorSheetContent() {
       this.$.editor.notifyResize();
     }
+
+    _resizeExportContent() {
+      this.$.exportOptionsContainer.notifyResize();
+    }
     // Handles cookie edit cancel event
     _cancelEdit() {
       this.$.editorContainer.opened = false;
@@ -740,6 +809,13 @@ the License.
       });
     }
 
+    /**
+     * Generates file name for the export options panel.
+     * @return {String}
+     */
+    _generateFileName() {
+      return 'arc-session-cookies.json';
+    }
     /**
      * Fired when queries the application for list of session cookies.
      * The element expects the `result` property to be set on the `detail`

@@ -419,50 +419,43 @@
         });
       });
 
-      test('_exportAllFile() calls _exportItems with data', () => {
+      test('_exportAllFile() calls _doExportItems with data', () => {
         const dest = 'file';
-        element._exportItems = function(items, destination) {
-          assert.deepEqual(items, element.items);
-          assert.equal(destination, dest);
+        element._doExportItems = function(items, detail) {
+          assert.isTrue(items);
+          assert.typeOf(detail.options, 'object');
+          assert.equal(detail.options.provider, dest);
+          assert.equal(detail.options.file, 'arc-session-cookies.json');
         };
         element._exportAllFile();
       });
 
-      test('_exportAllDrive() calls _exportItems with data', () => {
-        const dest = 'drive';
-        element._exportItems = function(items, destination) {
-          assert.deepEqual(items, element.items);
-          assert.equal(destination, dest);
-        };
-        element._exportAllDrive();
-      });
-
-      test('Dispatches export-data event', (done) => {
-        window.addEventListener('export-data', function f(e) {
-          window.removeEventListener('export-data', f);
+      test('Dispatches arc-data-export event', (done) => {
+        window.addEventListener('arc-data-export', function f(e) {
+          window.removeEventListener('arc-data-export', f);
           assert.isTrue(e.cancelable, 'Event is cancelable');
           assert.isTrue(e.bubbles, 'Event bubbles');
-          assert.typeOf(e.detail.file, 'string');
-          assert.equal(e.detail.destination, 'drive');
-          assert.equal(e.detail.type, 'arc-export');
+          assert.equal(e.detail.options.file, 'test.json');
+          assert.equal(e.detail.options.provider, 'file');
           assert.typeOf(e.detail.data, 'object');
           assert.deepEqual(e.detail.data.cookies, element.items);
           done();
         });
-        element._exportItems(element.items, 'drive');
-      });
-
-      test('Default destination is file', (done) => {
-        window.addEventListener('export-data', function f(e) {
-          window.removeEventListener('export-data', f);
-          assert.equal(e.detail.destination, 'file');
-          done();
+        element._doExportItems(element.items, {
+          options: {
+            provider: 'file',
+            file: 'test.json'
+          }
         });
-        element._exportItems(element.items);
       });
 
       test('Opens toast when event not handled', () => {
-        element._exportItems(element.items);
+        element._doExportItems(element.items, {
+          options: {
+            provider: 'file',
+            file: 'test.json'
+          }
+        });
         assert.isTrue(element.$.noExport.opened);
       });
     });

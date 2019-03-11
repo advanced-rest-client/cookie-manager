@@ -30,6 +30,7 @@
 /// <reference path="../cookie-editor/cookie-editor.d.ts" />
 /// <reference path="../cookie-details/cookie-details.d.ts" />
 /// <reference path="../paper-fab/paper-fab.d.ts" />
+/// <reference path="../export-options/export-options.d.ts" />
 
 declare namespace UiElements {
 
@@ -123,6 +124,12 @@ declare namespace UiElements {
      */
     readonly dataUnavailable: boolean|null|undefined;
     _tutorialAllowed: boolean|null|undefined;
+
+    /**
+     * Indicates that the export options panel is currently rendered.
+     */
+    _exportOptionsOpened: boolean|null|undefined;
+    _exportOptions: object|null|undefined;
     connectedCallback(): void;
     disconnectedCallback(): void;
     reset(): void;
@@ -182,27 +189,45 @@ declare namespace UiElements {
     _delete(deleted: Array<object|null>|null): Promise<any>|null;
 
     /**
+     * Handler for `accept` event dispatched by export options element.
+     *
+     * @returns Result of calling `_doExportItems()`
+     */
+    _acceptExportOptions(e: CustomEvent|null): Promise<any>|null;
+    _cancelExportOptions(): void;
+
+    /**
+     * Calls `_dispatchExportData()` from requests lists mixin with
+     * prepared arguments
+     *
+     * @param cookies List of cookies to export.
+     * @param detail Export configuration
+     */
+    _doExportItems(cookies: Array<object|null>|null, detail: String|null): Promise<any>|null;
+
+    /**
+     * Dispatches `arc-data-export` event and returns it.
+     *
+     * @param cookies List of cookies to export.
+     */
+    _dispatchExportData(cookies: Array<object|null>|null, opts: object|null): CustomEvent|null;
+
+    /**
      * Handles export event from the list.
      */
     _onExport(e: CustomEvent|null): void;
 
     /**
      * Menu item handler to export all data to file
+     *
+     * @returns Result of calling `_doExportItems()`
      */
-    _exportAllFile(): void;
+    _exportAllFile(): Promise<any>|null;
 
     /**
      * Menu item handler to export all data to file
      */
-    _exportAllDrive(): void;
-
-    /**
-     * Dispatches `export-data` custom event
-     *
-     * @param items List of request to export with the project.
-     * @param destination Export destination.
-     */
-    _exportItems(items: any[]|null, destination: String|null): void;
+    openExportAll(): void;
 
     /**
      * Handler for the `list-items-search` event fired by the list view
@@ -282,6 +307,7 @@ declare namespace UiElements {
      * Forces bottom sheet content to resize
      */
     _resizeEditorSheetContent(): void;
+    _resizeExportContent(): void;
 
     /**
      * Handles cookie edit cancel event
@@ -297,6 +323,11 @@ declare namespace UiElements {
      * Saves cookie editts be sending `session-cookie-update` event
      */
     _saveEdit(e: CustomEvent|null): Promise<any>|null;
+
+    /**
+     * Generates file name for the export options panel.
+     */
+    _generateFileName(): String|null;
   }
 }
 
