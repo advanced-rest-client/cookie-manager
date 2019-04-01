@@ -1,4 +1,4 @@
-const CookieStub = {};
+export const CookieStub = {};
 CookieStub.listHandler = undefined;
 CookieStub.mockBridge = function(cookies) {
   CookieStub.listHandler = function(e) {

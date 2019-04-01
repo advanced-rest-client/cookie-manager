@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
   <title>cookie-manager test</title>
+
   <script src="../../../@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
-  <script src="../../../wct-browser-legacy/browser.js"></script>
-  <script src="../../../@polymer/iron-test-helpers/mock-interactions.js" type="module"></script>
-  <script src="./stub.js"></script>
-  <script type="module" src="../../../arc-data-generator/arc-data-generator.js"></script>
-  <script type="module" src="../cookie-manager.js"></script>
+  <script src="../../../@polymer/test-fixture/test-fixture.js"></script>
+  <script src="../../../mocha/mocha.js"></script>
+  <script src="../../../chai/chai.js"></script>
+  <script src="../../../wct-mocha/wct-mocha.js"></script>
+
 </head>
 <body>
   <test-fixture id="Basic">
@@ -19,9 +20,12 @@
   </test-fixture>
 
   <script type="module">
-  import '../../../arc-data-generator/arc-data-generator.js';
+  import {DataGenerator} from '../../../@advanced-rest-client/arc-data-generator/arc-data-generator.js';
+  import {CookieStub} from './stub.js';
+  import * as MockInteractions from '../../../@polymer/iron-test-helpers/mock-interactions.js';
+  import sinon from '../../../sinon/pkg/sinon-esm.js';
   import '../cookie-manager.js';
-  /* global CookieStub, DataGenerator */
+
   suite('cookie-manager', () => {
     function setupWhenLoaded(element, done) {
       element.addEventListener('loading-changed', function f(e) {
@@ -421,50 +425,43 @@
         });
       });
 
-      test('_exportAllFile() calls _exportItems with data', () => {
+      test('_exportAllFile() calls _doExportItems with data', () => {
         const dest = 'file';
-        element._exportItems = function(items, destination) {
-          assert.deepEqual(items, element.items);
-          assert.equal(destination, dest);
+        element._doExportItems = function(items, detail) {
+          assert.isTrue(items);
+          assert.typeOf(detail.options, 'object');
+          assert.equal(detail.options.provider, dest);
+          assert.equal(detail.options.file, 'arc-session-cookies.json');
         };
         element._exportAllFile();
       });
 
-      test('_exportAllDrive() calls _exportItems with data', () => {
-        const dest = 'drive';
-        element._exportItems = function(items, destination) {
-          assert.deepEqual(items, element.items);
-          assert.equal(destination, dest);
-        };
-        element._exportAllDrive();
-      });
-
-      test('Dispatches export-data event', (done) => {
-        window.addEventListener('export-data', function f(e) {
-          window.removeEventListener('export-data', f);
+      test('Dispatches arc-data-export event', (done) => {
+        window.addEventListener('arc-data-export', function f(e) {
+          window.removeEventListener('arc-data-export', f);
           assert.isTrue(e.cancelable, 'Event is cancelable');
           assert.isTrue(e.bubbles, 'Event bubbles');
-          assert.typeOf(e.detail.file, 'string');
-          assert.equal(e.detail.destination, 'drive');
-          assert.equal(e.detail.type, 'arc-export');
+          assert.equal(e.detail.options.file, 'test.json');
+          assert.equal(e.detail.options.provider, 'file');
           assert.typeOf(e.detail.data, 'object');
           assert.deepEqual(e.detail.data.cookies, element.items);
           done();
         });
-        element._exportItems(element.items, 'drive');
-      });
-
-      test('Default destination is file', (done) => {
-        window.addEventListener('export-data', function f(e) {
-          window.removeEventListener('export-data', f);
-          assert.equal(e.detail.destination, 'file');
-          done();
+        element._doExportItems(element.items, {
+          options: {
+            provider: 'file',
+            file: 'test.json'
+          }
         });
-        element._exportItems(element.items);
       });
 
       test('Opens toast when event not handled', () => {
-        element._exportItems(element.items);
+        element._doExportItems(element.items, {
+          options: {
+            provider: 'file',
+            file: 'test.json'
+          }
+        });
         assert.isTrue(element.$.noExport.opened);
       });
     });

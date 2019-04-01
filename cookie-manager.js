@@ -11,27 +11,26 @@ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
 */
-import {PolymerElement} from '@polymer/polymer/polymer-element.js';
-import '@polymer/iron-flex-layout/iron-flex-layout.js';
-import '@polymer/paper-button/paper-button.js';
-import '@polymer/iron-icon/iron-icon.js';
-import '@advanced-rest-client/arc-icons/arc-icons.js';
-import '@polymer/paper-menu-button/paper-menu-button.js';
-import '@polymer/paper-icon-button/paper-icon-button.js';
-import '@polymer/paper-listbox/paper-listbox.js';
-import '@polymer/paper-item/paper-icon-item.js';
-import '@polymer/paper-progress/paper-progress.js';
-import '@polymer/paper-toast/paper-toast.js';
-import '@polymer/paper-dialog/paper-dialog.js';
-import '@advanced-rest-client/tutorial-toast/tutorial-toast.js';
-import '@advanced-rest-client/bottom-sheet/bottom-sheet.js';
-import '@advanced-rest-client/cookies-list-items/cookies-list-items.js';
-import '@advanced-rest-client/cookie-editor/cookie-editor.js';
-import '@advanced-rest-client/cookie-details/cookie-details.js';
-import '@advanced-rest-client/export-options/export-options.js';
-import '@polymer/paper-fab/paper-fab.js';
-import {html} from '@polymer/polymer/lib/utils/html-tag.js';
-import {afterNextRender} from '@polymer/polymer/lib/utils/render-status.js';
+import {PolymerElement} from '../../@polymer/polymer/polymer-element.js';
+import {afterNextRender} from '../../@polymer/polymer/lib/utils/render-status.js';
+import {html} from '../../@polymer/polymer/lib/utils/html-tag.js';
+import '../../@polymer/paper-button/paper-button.js';
+import '../../@polymer/iron-icon/iron-icon.js';
+import '../../@advanced-rest-client/arc-icons/arc-icons.js';
+import '../../@polymer/paper-menu-button/paper-menu-button.js';
+import '../../@polymer/paper-icon-button/paper-icon-button.js';
+import '../../@polymer/paper-listbox/paper-listbox.js';
+import '../../@polymer/paper-item/paper-icon-item.js';
+import '../../@polymer/paper-progress/paper-progress.js';
+import '../../@polymer/paper-toast/paper-toast.js';
+import '../../@polymer/paper-dialog/paper-dialog.js';
+import '../../@advanced-rest-client/tutorial-toast/tutorial-toast.js';
+import '../../@advanced-rest-client/bottom-sheet/bottom-sheet.js';
+import '../../@advanced-rest-client/cookies-list-items/cookies-list-items.js';
+import '../../@advanced-rest-client/cookie-editor/cookie-editor.js';
+import '../../@advanced-rest-client/cookie-details/cookie-details.js';
+import '../../@advanced-rest-client/export-options/export-options.js';
+import '../../@polymer/paper-fab/paper-fab.js';
 /**
  *
  * A manager for session cookies.
@@ -93,25 +92,34 @@ class CookieManager extends PolymerElement {
     :host {
       display: block;
       position: relative;
-      @apply --arc-font-body1;
-      @apply --layout-vertical;
-      @apply --cookie-manager;
+      font-size: var(--arc-font-body1-font-size);
+      font-weight: var(--arc-font-body1-font-weight);
+      line-height: var(--arc-font-body1-line-height);
+      display: flex;
+      flex-direction: column;
     }
 
     .header {
-      @apply --layout-horizontal;
-      @apply --layout-center;
+      flex-direction: row;
+      display: flex;
+      align-items: center;
     }
 
     h2 {
       margin-left: 16px;
-      @apply --arc-font-headline;
-      @apply --layout-flex;
+      font-size: var(--arc-font-headline-font-size);
+      font-weight: var(--arc-font-headline-font-weight);
+      letter-spacing: var(--arc-font-headline-letter-spacing);
+      line-height: var(--arc-font-headline-line-height);
+      flex: 1;
+      flex-basis: 0.000000001px;
     }
 
     h3 {
       margin-left: 16px;
-      @apply --arc-font-subhead;
+      font-size: var(--arc-font-subhead-font-size);
+      font-weight: var(--arc-font-subhead-font-weight);
+      line-height: var(--arc-font-subhead-line-height);
     }
 
     paper-listbox iron-icon {
@@ -139,7 +147,6 @@ class CookieManager extends PolymerElement {
 
     paper-progress {
       width: 100%;
-      @apply --cookie-manager-loader;
     }
 
     #dataClearDialog {
@@ -155,13 +162,12 @@ class CookieManager extends PolymerElement {
     .error-toast {
       background-color: var(--warning-primary-color, #FF7043);
       color: var(--warning-contrast-color, #fff);
-      @apply --error-toast;
     }
 
     .empty-info {
       margin-left: 16px;
-      font-size: 16px;
-      @apply --empty-info;
+      color: var(--empty-info-color, rgba(0, 0, 0, 0.74));
+      font-size: var(--empty-info-font-size, 16px);
     }
 
     tutorial-toast {
@@ -175,7 +181,6 @@ class CookieManager extends PolymerElement {
       max-width: var(--bottom-sheet-max-width, 700px);
       right: var(--cookie-manager-bottom-sheet-right, 40px);
       left: var(--cookie-manager-bottom-sheet-left, auto);
-      @apply --cookie-manager-bottom-sheet;
     }
 
     cookies-list-items {

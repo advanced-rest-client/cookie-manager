@@ -5,31 +5,12 @@
  *   https://github.com/Polymer/tools/tree/master/packages/gen-typescript-declarations
  *
  * To modify these typings, edit the source file(s):
- *   cookie-manager.html
+ *   cookie-manager.js
  */
 
 
 // tslint:disable:variable-name Describing an API that's defined elsewhere.
 // tslint:disable:no-any describes the API as best we are able today
-
-/// <reference path="../polymer/types/polymer-element.d.ts" />
-/// <reference path="../iron-flex-layout/iron-flex-layout.d.ts" />
-/// <reference path="../paper-button/paper-button.d.ts" />
-/// <reference path="../iron-icon/iron-icon.d.ts" />
-/// <reference path="../arc-icons/arc-icons.d.ts" />
-/// <reference path="../paper-menu-button/paper-menu-button.d.ts" />
-/// <reference path="../paper-icon-button/paper-icon-button.d.ts" />
-/// <reference path="../paper-listbox/paper-listbox.d.ts" />
-/// <reference path="../paper-item/paper-icon-item.d.ts" />
-/// <reference path="../paper-progress/paper-progress.d.ts" />
-/// <reference path="../paper-toast/paper-toast.d.ts" />
-/// <reference path="../paper-dialog/paper-dialog.d.ts" />
-/// <reference path="../tutorial-toast/tutorial-toast.d.ts" />
-/// <reference path="../bottom-sheet/bottom-sheet.d.ts" />
-/// <reference path="../cookies-list-items/cookies-list-items.d.ts" />
-/// <reference path="../cookie-editor/cookie-editor.d.ts" />
-/// <reference path="../cookie-details/cookie-details.d.ts" />
-/// <reference path="../paper-fab/paper-fab.d.ts" />
 
 declare namespace UiElements {
 
@@ -81,7 +62,7 @@ declare namespace UiElements {
    * `--cookie-manager-bottom-sheet-right` | Right position of the `<bottom-sheet>` element | `40px`
    * `--cookie-manager-bottom-sheet-left` | Left position of the `<bottom-sheet>` element | `auto`
    */
-  class CookieManager extends Polymer.Element {
+  class CookieManager extends PolymerElement {
 
     /**
      * List of cookies to display
@@ -123,6 +104,12 @@ declare namespace UiElements {
      */
     readonly dataUnavailable: boolean|null|undefined;
     _tutorialAllowed: boolean|null|undefined;
+
+    /**
+     * Indicates that the export options panel is currently rendered.
+     */
+    _exportOptionsOpened: boolean|null|undefined;
+    _exportOptions: object|null|undefined;
     connectedCallback(): void;
     disconnectedCallback(): void;
     reset(): void;
@@ -182,27 +169,45 @@ declare namespace UiElements {
     _delete(deleted: Array<object|null>|null): Promise<any>|null;
 
     /**
+     * Handler for `accept` event dispatched by export options element.
+     *
+     * @returns Result of calling `_doExportItems()`
+     */
+    _acceptExportOptions(e: CustomEvent|null): Promise<any>|null;
+    _cancelExportOptions(): void;
+
+    /**
+     * Calls `_dispatchExportData()` from requests lists mixin with
+     * prepared arguments
+     *
+     * @param cookies List of cookies to export.
+     * @param detail Export configuration
+     */
+    _doExportItems(cookies: Array<object|null>|null, detail: String|null): Promise<any>|null;
+
+    /**
+     * Dispatches `arc-data-export` event and returns it.
+     *
+     * @param cookies List of cookies to export.
+     */
+    _dispatchExportData(cookies: Array<object|null>|null, opts: object|null): CustomEvent|null;
+
+    /**
      * Handles export event from the list.
      */
     _onExport(e: CustomEvent|null): void;
 
     /**
      * Menu item handler to export all data to file
+     *
+     * @returns Result of calling `_doExportItems()`
      */
-    _exportAllFile(): void;
+    _exportAllFile(): Promise<any>|null;
 
     /**
      * Menu item handler to export all data to file
      */
-    _exportAllDrive(): void;
-
-    /**
-     * Dispatches `export-data` custom event
-     *
-     * @param items List of request to export with the project.
-     * @param destination Export destination.
-     */
-    _exportItems(items: any[]|null, destination: String|null): void;
+    openExportAll(): void;
 
     /**
      * Handler for the `list-items-search` event fired by the list view
@@ -282,6 +287,7 @@ declare namespace UiElements {
      * Forces bottom sheet content to resize
      */
     _resizeEditorSheetContent(): void;
+    _resizeExportContent(): void;
 
     /**
      * Handles cookie edit cancel event
@@ -297,9 +303,19 @@ declare namespace UiElements {
      * Saves cookie editts be sending `session-cookie-update` event
      */
     _saveEdit(e: CustomEvent|null): Promise<any>|null;
+
+    /**
+     * Generates file name for the export options panel.
+     */
+    _generateFileName(): String|null;
   }
 }
 
-interface HTMLElementTagNameMap {
-  "cookie-manager": UiElements.CookieManager;
+declare global {
+
+  interface HTMLElementTagNameMap {
+    "cookie-manager": UiElements.CookieManager;
+  }
 }
+
+export {};
