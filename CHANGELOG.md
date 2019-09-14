@@ -68,3 +68,7 @@
 
 
 
+# [3.0.0](https://github.com/advanced-rest-client/cookie-manager/compare/0.1.1...3.0.0) (2019-09-14)
+
+
+
