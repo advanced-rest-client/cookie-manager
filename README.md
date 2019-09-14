@@ -6,15 +6,9 @@
 
 # cookie-manager
 
-A manager for session cookies. Displays a list of cookies that can be edited
+A manager for session cookies. Renders a list of cookies that can be edited.
 
-```html
-<cookie-manager></cookie-manager>
-```
-
-### API components
-
-This components is a part of [API components ecosystem](https://elements.advancedrestclient.com/)
+Cooke access is different in web, Chrome App, and Electron app. Each application should handle cookies requests by their own.
 
 ## Usage
 
@@ -23,29 +17,14 @@ This components is a part of [API components ecosystem](https://elements.advance
 npm install --save @advanced-rest-client/cookie-manager
 ```
 
-### In an html file
-
-```html
-<html>
-  <head>
-    <script type="module">
-      import './node_modules/@advanced-rest-client/cookie-manager/cookie-manager.js';
-    </script>
-  </head>
-  <body>
-    <cookie-manager></cookie-manager>
-  </body>
-</html>
-```
-
-### In a Polymer 3 element
+### In a LitElement
 
 ```js
-import {PolymerElement, html} from './node_modules/@polymer/polymer';
+import { LitElement, html } from 'lit-element';
 import './node_modules/@advanced-rest-client/cookie-manager/cookie-manager.js';
 
-class SampleElement extends PolymerElement {
-  static get template() {
+class SampleElement extends LitElement {
+  render() {
     return html`
     <cookie-manager></cookie-manager>
     `;
@@ -58,19 +37,21 @@ customElements.define('sample-element', SampleElement);
 
 ```sh
 git clone https://github.com/advanced-rest-client/cookie-manager
-cd api-url-editor
+cd cookie-manager
 npm install
-npm install -g polymer-cli
 ```
 
 ### Running the demo locally
 
 ```sh
-polymer serve --npm
-open http://127.0.0.1:<port>/demo/
+npm start
 ```
 
 ### Running the tests
 ```sh
-polymer test --npm
+npm test
 ```
+
+## API components
+
+This components is a part of [API components ecosystem](https://elements.advancedrestclient.com/)
