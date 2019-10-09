@@ -114,6 +114,11 @@ export class CookieManager extends LitElement {
       // Current search query.
       isSearch: { type: Boolean },
       /**
+       * When set is enables encryption options.
+       * Currently only in the export panel.
+       */
+      withEncrypt: { type: Boolean },
+      /**
        * Indicates that the export options panel is currently rendered.
        */
       _exportOptionsOpened: { type: Boolean },
@@ -768,7 +773,7 @@ export class CookieManager extends LitElement {
   }
 
   _cookieExportTemplate() {
-    const { compatibility, outlined, _exportOptions, _exportOptionsOpened } = this;
+    const { compatibility, outlined, _exportOptions, _exportOptionsOpened, withEncrypt } = this;
     return html`
     <bottom-sheet
       id="exportOptionsContainer"
@@ -779,6 +784,7 @@ export class CookieManager extends LitElement {
         id="exportOptions"
         ?compatibility="${compatibility}"
         ?outlined="${outlined}"
+        ?withEncrypt="${withEncrypt}"
         .file="${_exportOptions.file}"
         .provider="${_exportOptions.provider}"
         .providerOptions="${_exportOptions.providerOptions}"

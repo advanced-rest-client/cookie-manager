@@ -10,6 +10,10 @@ describe('<cookie-manager>', function() {
     return await fixture(html`<cookie-manager></cookie-manager>`);
   }
 
+  async function exportEncryptFixture() {
+    return await fixture(html`<cookie-manager withEncrypt></cookie-manager>`);
+  }
+
   describe('Basics', () => {
     before(function() {
       CookieStub.mockBridge();
@@ -883,6 +887,14 @@ describe('<cookie-manager>', function() {
       assert.isUndefined(element._details.cookie, 'details cookie is cleared');
       assert.isFalse(element._detailsContainer.opened, 'detail is closed');
       assert.isTrue(element._editorContainer.opened, 'editor is open');
+    });
+  });
+
+  describe('Export encryption', () => {
+    it('Enables encryption option', async () => {
+      const element = await exportEncryptFixture();
+      const node = element.shadowRoot.querySelector('export-options');
+      assert.isTrue(node.withEncrypt);
     });
   });
 });
