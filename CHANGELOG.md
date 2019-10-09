@@ -72,3 +72,12 @@
 
 
 
+## [3.0.1](https://github.com/advanced-rest-client/cookie-manager/compare/0.1.1...3.0.1) (2019-10-09)
+
+
+### Features
+
+* adding `withEncrypt` option ([feefa0a](https://github.com/advanced-rest-client/cookie-manager/commit/feefa0a))
+
+
+
