@@ -119,6 +119,12 @@ declare namespace UiElements {
     isSearch: boolean|null|undefined;
 
     /**
+     * When set is enables encryption options.
+     * Currently only in the export panel.
+     */
+    withEncrypt: boolean|null|undefined;
+
+    /**
      * Indicates that the export options panel is currently rendered.
      */
     _exportOptionsOpened: boolean|null|undefined;
