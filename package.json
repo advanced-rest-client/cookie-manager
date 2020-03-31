@@ -1,7 +1,7 @@
 {
   "name": "@advanced-rest-client/cookie-manager",
   "description": "A manager for session cookies. Displays a list of cookies that can be edited",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "license": "Apache-2.0",
   "main": "cookie-manager.js",
   "keywords": [
